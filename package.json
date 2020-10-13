@@ -25,6 +25,11 @@
       "pre-commit": "tsdx lint"
     }
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/joshuaaron/use-element-in-view.git"
+  },
+  "homepage": "https://github.com/joshuaaron/use-element-in-view",
   "prettier": {
     "printWidth": 80,
     "semi": true,
