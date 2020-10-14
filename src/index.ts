@@ -33,6 +33,13 @@ export function useElementInView<T extends HTMLElement = HTMLElement>({
     });
     const isMounted = useRef(true);
 
+    const disconnectInstance = useCallback(() => {
+        const observer = observerInstanceRef.current;
+        if (observer) {
+            observer.disconnect();
+        }
+    }, []);
+
     const assignRef = useCallback(
         (node: T | null) => {
             const registerInstance = () => {
@@ -67,22 +74,15 @@ export function useElementInView<T extends HTMLElement = HTMLElement>({
                 observer.observe(node);
             }
         },
-        [root, rootMargin, threshold, disconnectOnceVisible]
+        [root, rootMargin, threshold, disconnectOnceVisible, disconnectInstance]
     );
-
-    function disconnectInstance() {
-        const observer = observerInstanceRef.current;
-        if (observer) {
-            observer.disconnect();
-        }
-    }
 
     useEffect(() => {
         return () => {
             isMounted.current = false;
             disconnectInstance();
         };
-    }, []);
+    }, [disconnectInstance]);
 
     return { entry: observerEntry.entry, inView: observerEntry.elementInView, assignRef } as const;
 }
