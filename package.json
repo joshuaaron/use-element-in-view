@@ -22,26 +22,27 @@
   },
   "husky": {
     "hooks": {
-      "pre-commit": "tsdx lint"
+      "pre-commit": "lint-staged"
     }
+  },
+  "lint-staged": {
+    "*.{js,ts,tsx}": [
+        "npm run lint",
+        "prettier --write"
+    ]
   },
   "repository": {
     "type": "git",
     "url": "https://github.com/joshuaaron/use-element-in-view.git"
   },
   "homepage": "https://github.com/joshuaaron/use-element-in-view",
-  "prettier": {
-    "printWidth": 80,
-    "semi": true,
-    "singleQuote": true,
-    "trailingComma": "es5"
-  },
   "name": "use-element-in-view",
   "author": "Josh Reynolds",
   "module": "dist/use-element-in-view.esm.js",
   "devDependencies": {
     "@types/react": "16.9.52",
     "@types/react-dom": "16.9.8",
+    "eslint-plugin-react-hooks": "4.1.2",
     "husky": "4.3.0",
     "prettier": "2.1.2",
     "react": "16.13.1",
@@ -49,5 +50,16 @@
     "tsdx": "0.14.0",
     "tslib": "2.0.3",
     "typescript": "4.0.3"
-  }
+  },
+  "keywords": [
+    "react",
+    "reactjs",
+    "react-hooks",
+    "hooks",
+    "hook",
+    "intersection-observer",
+    "inview",
+    "react-intersection",
+    "react-observer"
+  ]
 }
