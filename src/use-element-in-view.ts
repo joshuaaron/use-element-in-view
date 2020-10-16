@@ -1,12 +1,14 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
+import { useLatest } from './use-latest';
 
 const DEFAULT_ROOT = null;
 const DEFAULT_ROOT_MARGIN = '0px';
 const DEFAULT_THRESHOLD = [0];
 
-interface IElementInViewOptions extends IntersectionObserverInit {
+export interface IElementInViewOptions extends IntersectionObserverInit {
     defaultInView?: boolean;
     disconnectOnceVisible?: boolean;
+    onChange?: (entry: IntersectionObserverEntry) => void;
 }
 
 interface IElementInViewResult<T> {
@@ -26,11 +28,13 @@ export function useElementInView<T extends HTMLElement = HTMLElement>({
     threshold = DEFAULT_THRESHOLD,
     defaultInView = false,
     disconnectOnceVisible = false,
+    onChange,
 }: IElementInViewOptions = {}): IElementInViewResult<T> {
     const observerInstanceRef = useRef<IntersectionObserver | null>(null);
     const [observerEntry, setObserverEntry] = useState<IElementInViewState>({
         elementInView: defaultInView,
     });
+    const onChangeRef = useLatest<IElementInViewOptions['onChange'] | undefined>(onChange);
     const isMounted = useRef(true);
 
     const disconnectInstance = useCallback(() => {
@@ -52,12 +56,15 @@ export function useElementInView<T extends HTMLElement = HTMLElement>({
                                     (threshold) => entry.intersectionRatio >= threshold
                                 );
 
-                            if (isMounted.current) {
-                                setObserverEntry({ entry, elementInView: entryInView });
-                            }
-
                             if (entryInView && disconnectOnceVisible) {
                                 disconnectInstance();
+                            }
+                            if (onChangeRef.current) {
+                                onChangeRef.current(entry);
+                            }
+
+                            if (isMounted.current) {
+                                setObserverEntry({ entry, elementInView: entryInView });
                             }
                         },
                         { root, rootMargin, threshold }
@@ -74,7 +81,7 @@ export function useElementInView<T extends HTMLElement = HTMLElement>({
                 observer.observe(node);
             }
         },
-        [root, rootMargin, threshold, disconnectOnceVisible, disconnectInstance]
+        [root, rootMargin, threshold, disconnectOnceVisible, disconnectInstance, onChangeRef]
     );
 
     useEffect(() => {
