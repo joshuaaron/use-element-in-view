@@ -27,11 +27,15 @@ export const mockIntersectionObserver = jest.fn((cb, options = {}) => {
         elements: new Set<Element>(),
     };
     const instance: IntersectionObserver = {
-        ...options,
+        thresholds: Array.isArray(options.threshold) ? options.threshold : [options.threshold ?? 0],
+        root: options.root ?? null,
+        rootMargin: options.rootMargin ?? '0px',
         observe: jest.fn((element: Element) => {
             item.elements.add(element);
         }),
         disconnect: jest.fn(),
+        unobserve: jest.fn(),
+        takeRecords: jest.fn(),
     };
 
     observers.set(instance, item);
