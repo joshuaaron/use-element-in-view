@@ -4,12 +4,13 @@ import { act } from 'react-test-renderer';
 import { renderHook } from '@testing-library/react-hooks';
 import { useElementInView, IElementInViewOptions } from '../use-element-in-view';
 import {
-    observers,
-    mockIsIntersecting,
+    observerMap,
+    triggerObserverCallback,
     mockIntersectionObserver,
     getMockedInstance,
 } from '../test-utils';
 
+// Helper component to render the hook, and return the result and all utils from the render method from testing-library
 const renderComponent = (opts?: IElementInViewOptions) => {
     const { result } = renderHook(() => useElementInView(opts));
 
@@ -35,7 +36,7 @@ beforeAll(() => {
 afterEach(() => {
     // @ts-ignore
     global.IntersectionObserver.mockClear();
-    observers.clear();
+    observerMap.clear();
 });
 
 describe('useElementInView', () => {
@@ -63,7 +64,7 @@ describe('useElementInView', () => {
         expect(result.current.inView).toBe(false);
 
         act(() => {
-            mockIsIntersecting(wrapper, { isIntersecting: true });
+            triggerObserverCallback({ target: wrapper, isIntersecting: true });
         });
 
         expect(result.current.inView).toBe(true);
@@ -72,19 +73,22 @@ describe('useElementInView', () => {
     it('should call onChange with the correct params when the intersection observer callback is called', () => {
         const { utils } = renderComponent({ onChange: onChangeCb });
         const wrapper = utils.getByTestId('wrapper');
+
         expect(onChangeCb).toBeCalledTimes(0);
+
         act(() => {
-            mockIsIntersecting(wrapper, { isIntersecting: true });
+            triggerObserverCallback({ target: wrapper, isIntersecting: true });
         });
 
         expect(onChangeCb).toBeCalledTimes(1);
 
         act(() => {
-            mockIsIntersecting(wrapper, { isIntersecting: false });
+            triggerObserverCallback({ target: wrapper, isIntersecting: false });
         });
 
         expect(onChangeCb).toBeCalledTimes(2);
         expect(onChangeCb).toBeCalledWith({
+            target: wrapper,
             isIntersecting: false,
             intersectionRatio: 0,
         });
@@ -98,9 +102,39 @@ describe('useElementInView', () => {
         expect(instance.disconnect).toBeCalledTimes(1); // Called once before connecting a new node;
 
         act(() => {
-            mockIsIntersecting(wrapper, { isIntersecting: true });
+            triggerObserverCallback({ target: wrapper, isIntersecting: true });
         });
 
         expect(instance.disconnect).toBeCalledTimes(2);
+    });
+
+    it('should only be inView when the intersecting ratio is higher than the threshold option passed in', () => {
+        const { utils, result } = renderComponent({ threshold: [0.5, 1] });
+        const wrapper = utils.getByTestId('wrapper');
+
+        // Should initially be out of view
+        expect(result.current.inView).toBe(false);
+
+        act(() => {
+            triggerObserverCallback({
+                target: wrapper,
+                isIntersecting: true,
+                intersectionRatio: 0.4,
+            });
+        });
+
+        // Should still report false, even though isIntersecting is true
+        expect(result.current.inView).toBe(false);
+
+        act(() => {
+            triggerObserverCallback({
+                target: wrapper,
+                isIntersecting: true,
+                intersectionRatio: 0.6,
+            });
+        });
+
+        // Should now report true
+        expect(result.current.inView).toBe(true);
     });
 });

@@ -1,85 +1,78 @@
+// Mock the callback used to only require the properties we care about for the tests
 interface MockedIntersectionObserverCallback {
     (entries: MockedIntersectionObserverEntry[], observer?: IntersectionObserver): void;
 }
 
 interface MockedIntersectionObserverEntry {
-    intersectionRatio: number | number[];
-    isIntersecting: boolean;
+    target: Element;
+    intersectionRatio?: number | number[];
+    isIntersecting?: boolean;
 }
 
 type Item = {
     callback: MockedIntersectionObserverCallback;
-    elements: Set<Element>;
+    element: Set<Element>;
 };
 
-type TriggerCallbackEvent = {
-    isIntersecting?: boolean;
-    intersectionRatio?: number | number[];
-    item: Item;
-    observer?: IntersectionObserver;
-};
+export const observerMap = new Map<IntersectionObserver, Item>();
 
-export const observers = new Map<IntersectionObserver, Item>();
-
+// Mock the Intersection Observer API to be able to intercept the observe and disconnect calls used within the hook
 export const mockIntersectionObserver = jest.fn((cb, options = {}) => {
     const item = {
         callback: cb,
-        elements: new Set<Element>(),
+        element: new Set<Element>(),
     };
     const instance: IntersectionObserver = {
         thresholds: Array.isArray(options.threshold) ? options.threshold : [options.threshold ?? 0],
         root: options.root ?? null,
         rootMargin: options.rootMargin ?? '0px',
         observe: jest.fn((element: Element) => {
-            item.elements.add(element);
+            item.element.add(element);
         }),
         disconnect: jest.fn(),
         unobserve: jest.fn(),
         takeRecords: jest.fn(),
     };
 
-    observers.set(instance, item);
+    observerMap.set(instance, item);
     return instance;
 });
 
-export function mockIsIntersecting(
-    element: Element,
-    { isIntersecting, intersectionRatio }: Partial<MockedIntersectionObserverEntry>
-) {
-    const observer = getMockedInstance(element);
+// This function is used to mock the callback triggered when the intersection observer fires a change on the observed element
+// We can mock the return type, to test against the isIntersecting property along with thresholds.
+export function triggerObserverCallback({
+    target,
+    isIntersecting = false,
+    intersectionRatio = 0,
+}: MockedIntersectionObserverEntry) {
+    const observer = getMockedInstance(target);
+
     if (!observer) {
         throw new Error(
             'No IntersectionObserver instance found for element. Is it still mounted in the DOM?'
         );
     }
-    const item = observers.get(observer);
+
+    const item = observerMap.get(observer);
     if (item) {
-        triggerCallback({ item, observer, isIntersecting, intersectionRatio });
+        const entry: MockedIntersectionObserverEntry[] = [
+            {
+                target,
+                isIntersecting,
+                intersectionRatio,
+            },
+        ];
+
+        item.callback(entry, observer);
     }
 }
 
 export function getMockedInstance(element: Element): IntersectionObserver {
-    for (let [observer, item] of observers) {
-        if (item.elements.has(element)) {
+    for (let [observer, item] of observerMap) {
+        if (item.element.has(element)) {
             return observer;
         }
     }
 
     throw new Error('Failed to find IntersectionObserver for element. Is it being observed?');
-}
-
-function triggerCallback({
-    isIntersecting = false,
-    intersectionRatio = 0,
-    item,
-    observer,
-}: TriggerCallbackEvent) {
-    const entries: MockedIntersectionObserverEntry[] = [];
-    const entry: MockedIntersectionObserverEntry = {
-        isIntersecting,
-        intersectionRatio,
-    };
-
-    entries.push(entry);
-    item.callback([entry], observer);
 }
