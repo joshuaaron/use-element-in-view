@@ -1,40 +1,47 @@
-// Mock the callback used to only require the properties we care about for the tests
+// Mock the callback and the entry with only the properties we wish to test for brevity.
 interface MockedIntersectionObserverCallback {
     (entries: MockedIntersectionObserverEntry[], observer?: IntersectionObserver): void;
 }
 
 interface MockedIntersectionObserverEntry {
-    target: Element;
+    target: HTMLElement;
     intersectionRatio?: number | number[];
     isIntersecting?: boolean;
 }
 
-type Item = {
+// Store the element with the entry callback to be able to test/observe the node
+// the observe method was called on.
+type ObserverItem = {
     callback: MockedIntersectionObserverCallback;
     element: Set<Element>;
 };
 
-export const observerMap = new Map<IntersectionObserver, Item>();
+export const observerMap = new Map<IntersectionObserver, ObserverItem>();
 
+const defaultInitOptions = {
+    root: null,
+    rootMargin: '0px',
+    threshold: 0,
+};
 // Mock the Intersection Observer API to be able to intercept the observe and disconnect calls used within the hook
-export const mockIntersectionObserver = jest.fn((cb, options = {}) => {
-    const item = {
-        callback: cb,
+export const mockIntersectionObserver = jest.fn((callback, options = defaultInitOptions) => {
+    const observerItem = {
         element: new Set<Element>(),
+        callback,
     };
     const instance: IntersectionObserver = {
-        thresholds: Array.isArray(options.threshold) ? options.threshold : [options.threshold ?? 0],
-        root: options.root ?? null,
-        rootMargin: options.rootMargin ?? '0px',
+        root: options.root,
+        rootMargin: options.rootMargin,
+        thresholds: Array.isArray(options.threshold) ? options.threshold : [options.threshold],
         observe: jest.fn((element: Element) => {
-            item.element.add(element);
+            observerItem.element.add(element);
         }),
         disconnect: jest.fn(),
         unobserve: jest.fn(),
         takeRecords: jest.fn(),
     };
 
-    observerMap.set(instance, item);
+    observerMap.set(instance, observerItem);
     return instance;
 });
 
@@ -65,7 +72,7 @@ export function triggerObserverCallback({
     }
 }
 
-export function getMockedInstance(element: Element): IntersectionObserver {
+export function getMockedInstance(element: HTMLElement): IntersectionObserver {
     for (let [observer, item] of observerMap) {
         if (item.element.has(element)) {
             return observer;
