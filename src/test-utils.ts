@@ -48,9 +48,7 @@ export function triggerObserverCallback({
     const observer = getMockedInstance(target);
 
     if (!observer) {
-        throw new Error(
-            'No IntersectionObserver instance found for element. Is it still mounted in the DOM?'
-        );
+        throw new Error('No IntersectionObserver instance found, Is the element still mounted?');
     }
 
     const item = observerMap.get(observer);
@@ -74,5 +72,7 @@ export function getMockedInstance(element: Element): IntersectionObserver {
         }
     }
 
-    throw new Error('Failed to find IntersectionObserver for element. Is it being observed?');
+    throw new Error(
+        'Failed to find IntersectionObserver for the provided element. Is it still being observed?'
+    );
 }

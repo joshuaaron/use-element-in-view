@@ -15,6 +15,7 @@ interface IElementInViewResult<T> {
     readonly inView: boolean;
     readonly entry: IntersectionObserverEntry | undefined;
     readonly assignRef: (node: T | null) => void;
+    readonly disconnect: () => void;
 }
 
 interface IElementInViewState {
@@ -30,66 +31,82 @@ export function useElementInView<T extends HTMLElement = HTMLElement>({
     disconnectOnceVisible = false,
     onChange,
 }: IElementInViewOptions = {}): IElementInViewResult<T> {
-    const observerInstanceRef = useRef<IntersectionObserver | null>(null);
     const [observerEntry, setObserverEntry] = useState<IElementInViewState>({
         elementInView: defaultInView,
     });
+    const observerInstanceRef = useRef<IntersectionObserver | null>(null);
+    const isObservingRef = useRef<boolean>(false);
+    const isMountedRef = useRef<boolean>(true);
     const onChangeRef = useLatest<IElementInViewOptions['onChange'] | undefined>(onChange);
-    const isMounted = useRef(true);
 
-    const disconnectInstance = useCallback(() => {
-        const observer = observerInstanceRef.current;
-        if (observer) {
-            observer.disconnect();
+    const observe = useCallback((node: T) => {
+        if (isObservingRef.current || !observerInstanceRef.current) {
+            return;
         }
+
+        isObservingRef.current = true;
+        observerInstanceRef.current.observe(node);
+    }, []);
+
+    const disconnect = useCallback(() => {
+        if (!isObservingRef.current || !observerInstanceRef.current) {
+            return;
+        }
+
+        isObservingRef.current = false;
+        observerInstanceRef.current.disconnect();
     }, []);
 
     const assignRef = useCallback(
         (node: T | null) => {
             const registerInstance = () => {
-                if (!observerInstanceRef.current) {
-                    const instance = new IntersectionObserver(
-                        ([entry]: IntersectionObserverEntry[]) => {
-                            const entryInView =
-                                entry.isIntersecting &&
-                                instance.thresholds.some(
-                                    (threshold) => entry.intersectionRatio >= threshold
-                                );
+                const instance = new IntersectionObserver(
+                    ([entry]: IntersectionObserverEntry[]) => {
+                        const entryInView =
+                            entry.isIntersecting &&
+                            instance.thresholds.some(
+                                (threshold) => entry.intersectionRatio >= threshold
+                            );
 
-                            if (entryInView && disconnectOnceVisible) {
-                                disconnectInstance();
-                            }
-                            if (onChangeRef.current) {
-                                onChangeRef.current(entry);
-                            }
+                        if (entryInView && disconnectOnceVisible) {
+                            disconnect();
+                        }
+                        if (onChangeRef.current) {
+                            onChangeRef.current(entry);
+                        }
 
-                            if (isMounted.current) {
-                                setObserverEntry({ entry, elementInView: entryInView });
-                            }
-                        },
-                        { root, rootMargin, threshold }
-                    );
-                    observerInstanceRef.current = instance;
-                }
-
-                return observerInstanceRef.current;
+                        if (isMountedRef.current) {
+                            setObserverEntry({ entry, elementInView: entryInView });
+                        }
+                    },
+                    { root, rootMargin, threshold }
+                );
+                return instance;
             };
 
             if (node) {
-                const observer = registerInstance();
-                observer.disconnect(); // disconnect any previous connections
-                observer.observe(node);
+                if (!observerInstanceRef.current) {
+                    observerInstanceRef.current = registerInstance();
+                }
+
+                disconnect(); // disconnect any previous connections
+                observe(node);
             }
         },
-        [root, rootMargin, threshold, disconnectOnceVisible, disconnectInstance, onChangeRef]
+        [root, rootMargin, threshold, disconnectOnceVisible, observe, disconnect, onChangeRef]
     );
 
     useEffect(() => {
         return () => {
-            isMounted.current = false;
-            disconnectInstance();
+            isMountedRef.current = false;
+            disconnect();
         };
-    }, [disconnectInstance]);
+    }, [disconnect]);
 
-    return { entry: observerEntry.entry, inView: observerEntry.elementInView, assignRef } as const;
+    return {
+        entry: observerEntry.entry,
+        inView: observerEntry.elementInView,
+        disconnect,
+        assignRef,
+    } as const;
 }

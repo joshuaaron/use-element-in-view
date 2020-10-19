@@ -13,7 +13,8 @@
   "scripts": {
     "start": "tsdx watch",
     "build": "tsdx build",
-    "test": "tsdx test --passWithNoTests",
+    "test": "tsdx test",
+    "test:watch": "tsdx test --watch",
     "lint": "tsdx lint",
     "prepare": "tsdx build"
   },
@@ -22,7 +23,7 @@
   },
   "husky": {
     "hooks": {
-      "pre-commit": "lint-staged"
+      "pre-commit": "lint-staged && npm run test"
     }
   },
   "lint-staged": {
@@ -44,6 +45,8 @@
     "@testing-library/react-hooks": "3.4.2",
     "@types/react": "16.9.52",
     "@types/react-dom": "16.9.8",
+    "eslint": "7.11.0",
+    "eslint-config-tsdx": "0.2.0",
     "eslint-plugin-react-hooks": "4.1.2",
     "husky": "4.3.0",
     "lint-staged": "10.4.0",

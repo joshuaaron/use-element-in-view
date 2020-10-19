@@ -6,8 +6,15 @@
             "jsx": true
         }
     },
+    "extends": ["tsdx"],
+    "settings": {
+        "react": {
+            "version": "detect"
+        }
+    },
     "plugins": ["react-hooks"],
     "rules": {
+        "no-console": "warn",
         "react-hooks/rules-of-hooks": "error",
         "react-hooks/exhaustive-deps": "warn"
     }
