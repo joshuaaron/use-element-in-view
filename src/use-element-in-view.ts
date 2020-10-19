@@ -81,6 +81,7 @@ export function useElementInView<T extends HTMLElement = HTMLElement>({
         prevTrackedElementRef.current = element;
 
         if (!element) {
+            // eslint-disable-next-line
             console.warn(
                 '🚨 No element has been found, are you sure you correctly assigned a ref?'
             );
@@ -141,7 +142,6 @@ export function useElementInView<T extends HTMLElement = HTMLElement>({
 
     useEffect(() => {
         if (forwardedRef) {
-            console.log('Called from forwardRef');
             registerObserver();
         }
     }, [forwardedRef, registerObserver]);

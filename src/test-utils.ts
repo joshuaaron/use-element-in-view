@@ -11,29 +11,31 @@ interface MockedIntersectionObserverEntry {
 
 // Store the element with the entry callback to be able to test/observe the node
 // the observe method was called on.
-type ObserverItem = {
-    callback: MockedIntersectionObserverCallback;
-    element: Set<Element>;
-};
-
 export const observerMap = new Map<IntersectionObserver, ObserverItem>();
 
+type ObserverItem = {
+    callback: MockedIntersectionObserverCallback;
+    element: Set<HTMLElement>;
+};
+
+// Default intersection observer options.
 const defaultInitOptions = {
     root: null,
     rootMargin: '0px',
     threshold: 0,
 };
+
 // Mock the Intersection Observer API to be able to intercept the observe and disconnect calls used within the hook
 export const mockIntersectionObserver = jest.fn((callback, options = defaultInitOptions) => {
     const observerItem = {
-        element: new Set<Element>(),
+        element: new Set<HTMLElement>(),
         callback,
     };
     const instance: IntersectionObserver = {
         root: options.root,
         rootMargin: options.rootMargin,
         thresholds: Array.isArray(options.threshold) ? options.threshold : [options.threshold],
-        observe: jest.fn((element: Element) => {
+        observe: jest.fn((element: HTMLElement) => {
             observerItem.element.add(element);
         }),
         disconnect: jest.fn(),
