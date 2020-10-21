@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { render } from '@testing-library/react';
 import { act } from 'react-test-renderer';
 import { renderHook } from '@testing-library/react-hooks';
@@ -9,24 +9,6 @@ import {
     mockIntersectionObserver,
     getMockedInstance,
 } from '../test-utils';
-
-// Helper component to render the hook, and return the result and all utils from the render method from testing-library
-const renderElement = (opts?: IElementInViewOptions) => {
-    const { result } = renderHook(() => useElementInView(opts));
-
-    const utils = render(
-        <div data-testid='wrapper' ref={result.current.assignRef}>
-            {result.current.inView.toString()}
-        </div>
-    );
-
-    return {
-        utils,
-        result,
-    };
-};
-
-const onChangeCb = jest.fn();
 
 beforeAll(() => {
     global.IntersectionObserver = mockIntersectionObserver;
@@ -39,21 +21,71 @@ afterEach(() => {
     observerMap.clear();
 });
 
-describe('useElementInView', () => {
-    it('creates an observer instance from the element with the assigned ref', () => {
-        const { utils } = renderElement();
+const onChangeCb = jest.fn();
+
+// Helper component to render the hook, and return the result
+// and all utils from the render method from testing-library
+const renderElement = (opts?: IElementInViewOptions<any>, mount = true) => {
+    const { result } = renderHook(() => useElementInView(opts));
+    const utils = render(
+        <div data-testid='wrapper' ref={mount ? result.current.assignRef : null}>
+            {result.current.inView.toString()}
+        </div>
+    );
+
+    return {
+        utils,
+        result,
+    };
+};
+
+// To test a regular react ref, we need a regular component.
+// renderHook utility can't be used as our hook will be inside a callback which breaks the rules of hooks
+const RenderWithRefComponent = (opts?: IElementInViewOptions<any>) => {
+    const ref = useRef<HTMLDivElement | null>(null);
+    const result = useElementInView({ ...opts, ref });
+
+    return (
+        <div data-testid='wrapper-ref' ref={ref}>
+            {result.inView.toString()}
+        </div>
+    );
+};
+
+describe('use-element-in-view', () => {
+    it('should not create an instance if no refs have been supplied or assigned to an element', () => {
+        const { utils, result } = renderElement({}, false);
         const wrapper = utils.getByTestId('wrapper');
+
+        expect(result.current.entry).toBe(undefined);
+        expect(() => getMockedInstance(wrapper)).toThrowError();
+    });
+
+    it('should create an instance if the ref is supplied from the user', () => {
+        const { getByTestId } = render(<RenderWithRefComponent />);
+        const wrapper = getByTestId('wrapper-ref');
         const instance = getMockedInstance(wrapper);
+
         expect(instance.observe).toHaveBeenCalledWith(wrapper);
     });
 
-    it('element initially is not in view as a default', () => {
+    it('should create an instance if the ref is attached via the callback ref', () => {
+        const { utils } = renderElement();
+        const wrapper = utils.getByTestId('wrapper');
+        const instance = getMockedInstance(wrapper);
+
+        expect(instance.observe).toHaveBeenCalledWith(wrapper);
+    });
+
+    it('should initially show the element not in view as default', () => {
         const { result } = renderElement();
+
         expect(result.current.inView).toBe(false);
     });
 
     it('element should be in view set initially by options', () => {
         const { result } = renderElement({ defaultInView: true });
+
         expect(result.current.inView).toBe(true);
     });
 
@@ -108,8 +140,8 @@ describe('useElementInView', () => {
         expect(instance.disconnect).toBeCalledTimes(1);
     });
 
-    it('should only be inView when the intersecting ratio is higher than the threshold option passed in', () => {
-        const { utils, result } = renderElement({ threshold: [0.5, 1] });
+    it('should only be inView when the intersecting ratio is higher than the threshold passed in', () => {
+        const { utils, result } = renderElement({ threshold: [0.5] });
         const wrapper = utils.getByTestId('wrapper');
 
         // Should initially be out of view
