@@ -54,9 +54,10 @@ const RenderWithRefComponent = (opts?: IElementInViewOptions<any>) => {
 
 describe('use-element-in-view', () => {
     it('should not create an instance if no refs have been supplied or assigned to an element', () => {
-        const { utils } = renderElement({}, false);
+        const { utils, result } = renderElement({}, false);
         const wrapper = utils.getByTestId('wrapper');
 
+        expect(result.current.entry).toBe(undefined);
         expect(() => getMockedInstance(wrapper)).toThrowError();
     });
 

@@ -1,167 +1,88 @@
-# TSDX React User Guide
+# use-element-in-view
 
-Congrats! You just saved yourself hours of work by bootstrapping this project with TSDX. Let’s get you oriented with what’s here and how to use it.
+A simple React hook to track the visibility of an element that utlizies the Intersection Observer.
+The Intersection Observer API provides a native way to asynchronously observe changes in the intersection of a target element with an ancestor element or with a top-level document's viewport.
 
-> This TSDX setup is meant for developing React components (not apps!) that can be published to NPM. If you’re looking to build an app, you should use `create-react-app`, `razzle`, `nextjs`, `gatsby`, or `react-static`.
+Browser support for the Intersection Observer is incredibly wide, you can view the full list [here](https://caniuse.com/intersectionobserver). However, if you need to support older browsers, you can add a polyfill from [here](https://www.npmjs.com/package/intersection-observer).
 
-> If you’re new to TypeScript and React, checkout [this handy cheatsheet](https://github.com/sw-yx/react-typescript-cheatsheet/)
+## Install
 
-## Commands
+💡 Note: Since this module uses React Hooks, you'll need to have version >=16.8.0 of react and react-dom installed in your project
 
-TSDX scaffolds your new library inside `/src`, and also sets up a [Parcel-based](https://parceljs.org) playground for it inside `/example`.
-
-The recommended workflow is to run TSDX in one terminal:
-
-```bash
-npm start # or yarn start
+```sh
+npm install use-element-in-view --save-dev
+# or
+yarn add use-element-in-view --dev
 ```
 
-This builds to `/dist` and runs the project in watch mode so any edits you save inside `src` causes a rebuild to `/dist`.
+## Quick Start
 
-Then run the example inside another:
+```jsx
+import React from 'react';
+import { useElementInView } from 'use-element-in-view';
 
-```bash
-cd example
-npm i # or yarn to install dependencies
-npm start # or yarn start
-```
+function App() {
+    const { inView, assignRef } = useElementInView();
 
-The default example imports and live reloads whatever is in `/dist`, so if you are seeing an out of date component, make sure TSDX is running in watch mode like we recommend above. **No symlinking required**, [we use Parcel's aliasing](https://github.com/palmerhq/tsdx/pull/88/files).
-
-To do a one-off build, use `npm run build` or `yarn build`.
-
-To run tests, use `npm test` or `yarn test`.
-
-## Configuration
-
-Code quality is [set up for you](https://github.com/palmerhq/tsdx/pull/45/files) with `prettier`, `husky`, and `lint-staged`. Adjust the respective fields in `package.json` accordingly.
-
-### Jest
-
-Jest tests are set up to run with `npm test` or `yarn test`. This runs the test watcher (Jest) in an interactive mode. By default, runs tests related to files changed since the last commit.
-
-#### Setup Files
-
-This is the folder structure we set up for you:
-
-```shell
-/example
-  index.html
-  index.tsx       # test your component here in a demo app
-  package.json
-  tsconfig.json
-/src
-  index.tsx       # EDIT THIS
-/test
-  blah.test.tsx   # EDIT THIS
-.gitignore
-package.json
-README.md         # EDIT THIS
-tsconfig.json
-```
-
-#### React Testing Library
-
-We do not set up `react-testing-library` for you yet, we welcome contributions and documentation on this.
-
-### Rollup
-
-TSDX uses [Rollup v1.x](https://rollupjs.org) as a bundler and generates multiple rollup configs for various module formats and build settings. See [Optimizations](#optimizations) for details.
-
-### TypeScript
-
-`tsconfig.json` is set up to interpret `dom` and `esnext` types, as well as `react` for `jsx`. Adjust according to your needs.
-
-## Continuous Integration
-
-### Travis
-
-_to be completed_
-
-### Circle
-
-_to be completed_
-
-## Optimizations
-
-Please see the main `tsdx` [optimizations docs](https://github.com/palmerhq/tsdx#optimizations). In particular, know that you can take advantage of development-only optimizations:
-
-```js
-// ./types/index.d.ts
-declare var __DEV__: boolean;
-
-// inside your code...
-if (__DEV__) {
-  console.log('foo');
+    return <div ref={assignRef}>In View? {inView}</div>;
 }
 ```
 
-You can also choose to install and use [invariant](https://github.com/palmerhq/tsdx#invariant) and [warning](https://github.com/palmerhq/tsdx#warning) functions.
+## Using your own ref.
 
-## Module Formats
+```jsx
+import React, { useRef } from 'react';
+import { useElementInView } from 'use-element-in-view';
 
-CJS, ESModules, and UMD module formats are supported.
+function App() {
+    const ref = useRef();
+    const { inView } = useElementInView({ ref });
 
-The appropriate paths are configured in `package.json` and `dist/index.js` accordingly. Please report if any issues are found.
-
-## Using the Playground
-
-```bash
-cd example
-npm i # or yarn to install dependencies
-npm start # or yarn start
+    return <div ref={ref}>In View? {inView}</div>;
+}
 ```
 
-The default example imports and live reloads whatever is in `/dist`, so if you are seeing an out of date component, make sure TSDX is running in watch mode like we recommend above. **No symlinking required**!
+You can view more examples on CodeSandbox (**coming soon**).
 
-## Deploying the Playground
+## API
 
-The Playground is just a simple [Parcel](https://parceljs.org) app, you can deploy it anywhere you would normally deploy that. Here are some guidelines for **manually** deploying with the Netlify CLI (`npm i -g netlify-cli`):
+### `useElementInView(options)`
 
-```bash
-cd example # if not already in the example folder
-npm run build # builds to dist
-netlify deploy # deploy the dist folder
+```ts
+function useElementInView<T extends HTMLElement = HTMLElement>(
+    options?: IElementInViewOptions<T> = {}
+): IElementInViewResult<T>;
 ```
 
-Alternatively, if you already have a git repo connected, you can set up continuous deployment with Netlify:
+#### Arguments: `IElementInViewOptions<T>`
 
-```bash
-netlify init
-# build command: yarn build && cd example && yarn && yarn build
-# directory to deploy: example/dist
-# pick yes for netlify.toml
-```
+-   Note, all arguments are optional. The properties `root`, `rootMargin` and `threshold` are specific to the native Intersection Observer API and are forwarded along, more information can be found [here](https://developer.mozilla.org/en-US/docs/Web/API/IntersectionObserver)
 
-## Named Exports
+| Argument              | Type                                         | Default value | Description                                                                                                                                                                                                                                                                                                         |
+| --------------------- | -------------------------------------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ref                   | `T \| RefObject<T> \| null`                  | `null`        | Pass in your own ref instead of using the ref callback provided. This can be useful if you already have a ref inside your component you want to observe.                                                                                                                                                            |
+| defaultInView         | `boolean`                                    | `false`       | Set the default value for the inView property.                                                                                                                                                                                                                                                                      |
+| disconnectOnceVisible | `boolean`                                    | `false`       | Will disconnect the observer once the observed element has entered the viewport. A use-case for this is for lazy-loading images.                                                                                                                                                                                    |
+| onChange              | `(entry: IntersectionObserverEntry) => void` | `undefined`   | Provide a callback that receives the full `IntersectionObserverEntry` as an argument that fires on each change of intersection.                                                                                                                                                                                     |
+| root                  | `Element \| null`                            | `null`        | The `Element` or `Document` whose bounds are used as the bounding box when testing for intersection. If no root value was passed to the constructor or its value is null, the top-level document's viewport is used                                                                                                 |
+| rootMargin            | `string`                                     | `'0px'`       | A string which specifies a set of offsets to add to the root's bounding box when calculating intersections, effectively shrinking or growing the root for calculation purposes. The syntax is approximately the same as that for the CSS `margin` property. The default is `"0px 0px 0px 0px"`.                     |
+| threshold             | `number \| number[]`                         | `0`           | A list of thresholds, sorted in increasing numeric order, where each threshold is a ratio of intersection area to bounding box area of an observed target. Notifications for a target are generated when any of the thresholds are crossed for that target. If no value was passed to the constructor, `0` is used. |
 
-Per Palmer Group guidelines, [always use named exports.](https://github.com/palmerhq/typescript#exports) Code split inside your React app instead of your React library.
+#### Returns: `IElementInViewResult<T>`
 
-## Including Styles
+| Argument   | Type                                     | Description                                                                                                                                         |
+| ---------- | ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| inView     | `boolean`                                | Value representing if the observed element is visible in the viewport or not.                                                                       |
+| entry      | `IntersectionObserverEntry \| undefined` | The full entry (`IntersectionObserverEntry`) returned from the Intersection Observer callback when invoked.                                         |
+| assignRef  | `RefCallback<T>`                         | A callback ref to be assigned to your element. Note, if you do not pass in your own ref, this **must** be added to the element you wish to observe. |
+| disconnect | `() => void`                             | Function that will disconnect the current observer instance shall you need to trigger this yourself.                                                |
 
-There are many ways to ship styles, including with CSS-in-JS. TSDX has no opinion on this, configure how you like.
+## Contributing
 
-For vanilla CSS, you can include it at the root directory and add it to the `files` section in your `package.json`, so that it can be imported separately by your users and run through their bundler's loader.
+You can report bugs and issues [here](https://github.com/joshuaaron/use-element-in-view/issues/new).
 
-## Publishing to NPM
+Pull-requests are more than welcome if you feel like you can improve or fix something 💥
 
-We recommend using [np](https://github.com/sindresorhus/np).
+## License
 
-## Usage with Lerna
-
-When creating a new package with TSDX within a project set up with Lerna, you might encounter a `Cannot resolve dependency` error when trying to run the `example` project. To fix that you will need to make changes to the `package.json` file _inside the `example` directory_.
-
-The problem is that due to the nature of how dependencies are installed in Lerna projects, the aliases in the example project's `package.json` might not point to the right place, as those dependencies might have been installed in the root of your Lerna project.
-
-Change the `alias` to point to where those packages are actually installed. This depends on the directory structure of your Lerna project, so the actual path might be different from the diff below.
-
-```diff
-   "alias": {
--    "react": "../node_modules/react",
--    "react-dom": "../node_modules/react-dom"
-+    "react": "../../../node_modules/react",
-+    "react-dom": "../../../node_modules/react-dom"
-   },
-```
-
-An alternative to fixing this problem would be to remove aliases altogether and define the dependencies referenced as aliases as dev dependencies instead. [However, that might cause other problems.](https://github.com/palmerhq/tsdx/issues/64)
+MIT
