@@ -2,7 +2,8 @@ import React, { useRef } from 'react';
 import { render } from '@testing-library/react';
 import { act } from 'react-test-renderer';
 import { renderHook } from '@testing-library/react-hooks';
-import { useElementInView, IElementInViewOptions } from '../use-element-in-view';
+import { useElementInView, IElementInViewOptions } from '../';
+import * as helpers from '../helpers';
 import {
     observerMap,
     triggerObserverCallback,
@@ -10,18 +11,21 @@ import {
     getMockedInstance,
 } from '../test-utils';
 
+const onChangeMock = jest.fn();
+const hasSupportMock = jest.spyOn(helpers, 'hasSupport');
+
 beforeAll(() => {
     global.IntersectionObserver = mockIntersectionObserver;
     global.IntersectionObserverEntry = jest.fn();
+    hasSupportMock.mockReturnValue(true);
 });
 
 afterEach(() => {
     // @ts-ignore
     global.IntersectionObserver.mockClear();
     observerMap.clear();
+    hasSupportMock.mockClear();
 });
-
-const onChangeCb = jest.fn();
 
 // Helper component to render the hook, and return the result
 // and all utils from the render method from testing-library
@@ -61,6 +65,16 @@ describe('use-element-in-view', () => {
         expect(() => getMockedInstance(wrapper)).toThrowError();
     });
 
+    it('should not create an instance if the Intersection Observer is not supported', () => {
+        hasSupportMock.mockReturnValueOnce(false);
+
+        const { utils, result } = renderElement();
+        const wrapper = utils.getByTestId('wrapper');
+
+        expect(result.current.entry).toBe(undefined);
+        expect(() => getMockedInstance(wrapper)).toThrowError();
+    });
+
     it('should create an instance if the ref is supplied from the user', () => {
         const { getByTestId } = render(<RenderWithRefComponent />);
         const wrapper = getByTestId('wrapper-ref');
@@ -83,13 +97,13 @@ describe('use-element-in-view', () => {
         expect(result.current.inView).toBe(false);
     });
 
-    it('element should be in view set initially by options', () => {
+    it('should report element to be in view when initially set by options', () => {
         const { result } = renderElement({ defaultInView: true });
 
         expect(result.current.inView).toBe(true);
     });
 
-    it('inView should be true when the element is intersecting', () => {
+    it('should report inView as true when the element is intersecting', () => {
         const { utils, result } = renderElement();
         const wrapper = utils.getByTestId('wrapper');
 
@@ -103,23 +117,23 @@ describe('use-element-in-view', () => {
     });
 
     it('should call onChange with the correct params when the intersection observer callback is called', () => {
-        const { utils } = renderElement({ onChange: onChangeCb });
+        const { utils } = renderElement({ onChange: onChangeMock });
         const wrapper = utils.getByTestId('wrapper');
 
-        expect(onChangeCb).toBeCalledTimes(0);
+        expect(onChangeMock).toBeCalledTimes(0);
 
         act(() => {
             triggerObserverCallback({ target: wrapper, isIntersecting: true });
         });
 
-        expect(onChangeCb).toBeCalledTimes(1);
+        expect(onChangeMock).toBeCalledTimes(1);
 
         act(() => {
             triggerObserverCallback({ target: wrapper, isIntersecting: false });
         });
 
-        expect(onChangeCb).toBeCalledTimes(2);
-        expect(onChangeCb).toBeCalledWith({
+        expect(onChangeMock).toBeCalledTimes(2);
+        expect(onChangeMock).toBeCalledWith({
             target: wrapper,
             isIntersecting: false,
             intersectionRatio: 0,
@@ -131,7 +145,7 @@ describe('use-element-in-view', () => {
         const wrapper = utils.getByTestId('wrapper');
         const instance = getMockedInstance(wrapper);
 
-        expect(instance.disconnect).toBeCalledTimes(0); // Called once before connecting a new node;
+        expect(instance.disconnect).toBeCalledTimes(0);
 
         act(() => {
             triggerObserverCallback({ target: wrapper, isIntersecting: true });
@@ -170,7 +184,7 @@ describe('use-element-in-view', () => {
         expect(result.current.inView).toBe(true);
     });
 
-    it('disconnects the instance when the disconnect method is called from the consumer', () => {
+    it('should disconnect the instance when the disconnect method is called from the consumer', () => {
         const { utils, result } = renderElement();
         const wrapper = utils.getByTestId('wrapper');
         const instance = getMockedInstance(wrapper);

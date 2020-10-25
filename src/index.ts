@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useCallback, RefObject, RefCallback } from 'react';
-import { useLatest } from './use-latest';
+import { useLatest, hasSupport, isRefObject } from './helpers';
 
 export interface IElementInViewOptions<T> extends IntersectionObserverInit {
     ref?: T | RefObject<T> | null;
@@ -47,7 +47,7 @@ export function useElementInView<T extends HTMLElement = HTMLElement>({
     const isMountedRef = useRef<boolean>(true);
     const onChangeRef = useLatest<IElementInViewOptions<T>['onChange'] | undefined>(onChange);
 
-    const observe = useCallback((node: T) => {
+    const observeElement = useCallback((node: T) => {
         if (isObservingRef.current || !observerInstanceRef.current) {
             return;
         }
@@ -65,14 +65,20 @@ export function useElementInView<T extends HTMLElement = HTMLElement>({
         observerInstanceRef.current.disconnect();
     }, []);
 
+    // Instantiates the Intersection Observer.
+    // It will determine the element based off how it was provided
+    // and return a warning if no element was found via the options to assign one.
     const registerObserver = useCallback(() => {
-        let element: T | null = null;
+        if (!hasSupport()) {
+            return;
+        }
 
+        let element: T | null = null;
         if (callbackElementRef.current) {
             element = callbackElementRef.current;
         } else if (forwardedRef instanceof HTMLElement) {
             element = forwardedRef;
-        } else if (forwardedRef) {
+        } else if (isRefObject(forwardedRef)) {
             element = forwardedRef.current;
         }
 
@@ -88,17 +94,18 @@ export function useElementInView<T extends HTMLElement = HTMLElement>({
             return;
         }
 
+        // Ensure we only create the instance once
         if (!observerInstanceRef.current) {
             const instance = new IntersectionObserver(
                 ([entry]: IntersectionObserverEntry[]) => {
-                    const entryInView =
+                    const isIntersecting =
                         entry.isIntersecting &&
                         instance.thresholds.some(
                             (threshold) => entry.intersectionRatio >= threshold
                         );
 
                     // Disconnect the instance once the observed entry is in view, and option to disconnectOnceVisible has been set
-                    if (entryInView && disconnectOnceVisible) {
+                    if (isIntersecting && disconnectOnceVisible) {
                         disconnect();
                     }
 
@@ -109,7 +116,7 @@ export function useElementInView<T extends HTMLElement = HTMLElement>({
                     // Ensure we are still mounted before attempting to set state.
                     // TODO: This may not be needed for a callback that isn't called too often.
                     if (isMountedRef.current) {
-                        setObserverEntry({ entry, elementInView: entryInView });
+                        setObserverEntry({ entry, elementInView: isIntersecting });
                     }
                 },
                 { root, rootMargin, threshold }
@@ -118,13 +125,13 @@ export function useElementInView<T extends HTMLElement = HTMLElement>({
         }
 
         disconnect();
-        observe(element);
+        observeElement(element);
     }, [
         root,
         rootMargin,
         threshold,
         disconnectOnceVisible,
-        observe,
+        observeElement,
         disconnect,
         forwardedRef,
         onChangeRef,
@@ -144,14 +151,12 @@ export function useElementInView<T extends HTMLElement = HTMLElement>({
         if (forwardedRef) {
             registerObserver();
         }
-    }, [forwardedRef, registerObserver]);
 
-    useEffect(() => {
         return () => {
             isMountedRef.current = false;
             disconnect();
         };
-    }, [disconnect]);
+    }, [forwardedRef, registerObserver, disconnect]);
 
     return {
         entry: observerEntry.entry,

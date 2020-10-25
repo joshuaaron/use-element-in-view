@@ -35,7 +35,7 @@ import React, { useRef } from 'react';
 import { useElementInView } from 'use-element-in-view';
 
 function App() {
-    const ref = useRef();
+    const ref = useRef < HTMLDivElement > null;
     const { inView } = useElementInView({ ref });
 
     return <div ref={ref}>In View? {inView}</div>;
@@ -63,7 +63,7 @@ function useElementInView<T extends HTMLElement = HTMLElement>(
 | ref                   | `T \| RefObject<T> \| null`                  | `null`        | Pass in your own ref instead of using the ref callback provided. This can be useful if you already have a ref inside your component you want to observe.                                                                                                                                                            |
 | defaultInView         | `boolean`                                    | `false`       | Set the default value for the inView property.                                                                                                                                                                                                                                                                      |
 | disconnectOnceVisible | `boolean`                                    | `false`       | Will disconnect the observer once the observed element has entered the viewport. A use-case for this is for lazy-loading images.                                                                                                                                                                                    |
-| onChange              | `(entry: IntersectionObserverEntry) => void` | `undefined`   | Provide a callback that receives the full `IntersectionObserverEntry` as an argument that fires on each change of intersection.                                                                                                                                                                                     |
+| onChange              | `(entry: IntersectionObserverEntry) => void` | `undefined`   | Provide a callback that receives the full `IntersectionObserverEntry` as an argument that fires on each change of element intersection.                                                                                                                                                                             |
 | root                  | `Element \| null`                            | `null`        | The `Element` or `Document` whose bounds are used as the bounding box when testing for intersection. If no root value was passed to the constructor or its value is null, the top-level document's viewport is used                                                                                                 |
 | rootMargin            | `string`                                     | `'0px'`       | A string which specifies a set of offsets to add to the root's bounding box when calculating intersections, effectively shrinking or growing the root for calculation purposes. The syntax is approximately the same as that for the CSS `margin` property. The default is `"0px 0px 0px 0px"`.                     |
 | threshold             | `number \| number[]`                         | `0`           | A list of thresholds, sorted in increasing numeric order, where each threshold is a ratio of intersection area to bounding box area of an observed target. Notifications for a target are generated when any of the thresholds are crossed for that target. If no value was passed to the constructor, `0` is used. |
