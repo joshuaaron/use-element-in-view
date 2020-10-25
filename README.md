@@ -35,7 +35,7 @@ import React, { useRef } from 'react';
 import { useElementInView } from 'use-element-in-view';
 
 function App() {
-    const ref = useRef < HTMLDivElement > null;
+    const ref = useRef<HTMLDivElement>(null);
     const { inView } = useElementInView({ ref });
 
     return <div ref={ref}>In View? {inView}</div>;
