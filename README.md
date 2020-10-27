@@ -1,7 +1,7 @@
 # use-element-in-view
 
-A simple React hook to track the visibility of an element that utlizies the Intersection Observer.
-The Intersection Observer API provides a native way to asynchronously observe changes in the intersection of a target element with an ancestor element or with a top-level document's viewport.
+A simple React hook to track whether an element is visible in the viewport with the Intersection Observer.
+This API provides a native way to asynchronously observe changes in the intersection of a target element with an ancestor element or with a top-level document's viewport.
 
 Browser support for the Intersection Observer is incredibly wide, you can view the full list [here](https://caniuse.com/intersectionobserver). However, if you need to support older browsers, you can add a polyfill from [here](https://www.npmjs.com/package/intersection-observer).
 
