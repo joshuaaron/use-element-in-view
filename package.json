@@ -1,5 +1,5 @@
 {
-  "version": "1.0.0",
+  "version": "1.0.1",
   "license": "MIT",
   "main": "dist/index.js",
   "typings": "dist/index.d.ts",
@@ -16,7 +16,7 @@
     "test:watch": "tsdx test --watch",
     "lint": "tsdx lint",
     "prepare": "tsdx build",
-    "prepublishOnly" : "npm run test && npm run lint",
+    "prepublishOnly": "npm run test && npm run lint",
     "preversion": "npm run lint"
   },
   "peerDependencies": {
