@@ -15,7 +15,9 @@
     "test": "tsdx test",
     "test:watch": "tsdx test --watch",
     "lint": "tsdx lint",
-    "prepare": "tsdx build"
+    "prepare": "tsdx build",
+    "prepublishOnly" : "npm run test && npm run lint",
+    "preversion": "npm run lint"
   },
   "peerDependencies": {
     "react": ">=16"
