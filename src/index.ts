@@ -44,7 +44,6 @@ export function useElementInView<T extends HTMLElement = HTMLElement>({
 
     // Helper refs.
     const isObservingRef = useRef<boolean>(false);
-    const isMountedRef = useRef<boolean>(true);
     const onChangeRef = useLatest<IElementInViewOptions<T>['onChange'] | undefined>(onChange);
 
     const observeElement = useCallback((node: T) => {
@@ -61,8 +60,12 @@ export function useElementInView<T extends HTMLElement = HTMLElement>({
             return;
         }
 
-        isObservingRef.current = false;
         observerInstanceRef.current.disconnect();
+
+        // clear all refs
+        observerInstanceRef.current = null;
+        isObservingRef.current = false;
+        prevTrackedElementRef.current = null;
     }, []);
 
     // Instantiates the Intersection Observer.
@@ -113,18 +116,13 @@ export function useElementInView<T extends HTMLElement = HTMLElement>({
                         onChangeRef.current(entry);
                     }
 
-                    // Ensure we are still mounted before attempting to set state.
-                    // TODO: This may not be needed for a callback that isn't called too often.
-                    if (isMountedRef.current) {
-                        setObserverEntry({ entry, elementInView: isIntersecting });
-                    }
+                    setObserverEntry({ entry, elementInView: isIntersecting });
                 },
                 { root, rootMargin, threshold }
             );
             observerInstanceRef.current = instance;
         }
 
-        disconnect();
         observeElement(element);
     }, [
         root,
@@ -153,7 +151,6 @@ export function useElementInView<T extends HTMLElement = HTMLElement>({
         }
 
         return () => {
-            isMountedRef.current = false;
             disconnect();
         };
     }, [forwardedRef, registerObserver, disconnect]);
