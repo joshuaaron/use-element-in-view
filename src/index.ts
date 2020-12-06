@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback, RefObject, RefCallback } from 'react';
+import { useEffect, useState, useRef, useCallback, RefObject, RefCallback, useMemo } from 'react';
 import { useLatest, hasSupport, isRefObject } from './helpers';
 
 export interface IElementInViewOptions<T> extends IntersectionObserverInit {
@@ -45,6 +45,13 @@ export function useElementInView<T extends HTMLElement = HTMLElement>({
     // Helper refs.
     const isObservingRef = useRef<boolean>(false);
     const onChangeRef = useLatest<IElementInViewOptions<T>['onChange'] | undefined>(onChange);
+
+    // Store the threshold as a primitive value to ensure it doesn't change in the deps array
+    // for registerObserver fn when the consumer passes in an inline array.
+    // eg: threshold: [0.25, 0.5] => will be diffed as a new array each render
+    const memoizedThreshold = useMemo(() => {
+        return Array.isArray(threshold) ? threshold.join() : threshold;
+    }, [threshold]);
 
     const observeElement = useCallback((node: T) => {
         if (isObservingRef.current || !observerInstanceRef.current) {
@@ -97,6 +104,13 @@ export function useElementInView<T extends HTMLElement = HTMLElement>({
             return;
         }
 
+        // Take our stored threshold and transform it to `number | number[]` that is required
+        // for the IntersectionObserverInit option
+        const transformedThreshold =
+            typeof memoizedThreshold === 'string'
+                ? memoizedThreshold.split(',').map((value) => parseFloat(value))
+                : memoizedThreshold;
+
         // Ensure we only create the instance once
         if (!observerInstanceRef.current) {
             const instance = new IntersectionObserver(
@@ -114,12 +128,13 @@ export function useElementInView<T extends HTMLElement = HTMLElement>({
 
                     if (onChangeRef.current) {
                         onChangeRef.current(entry);
+                    } else {
+                        setObserverEntry({ entry, elementInView: isIntersecting });
                     }
-
-                    setObserverEntry({ entry, elementInView: isIntersecting });
                 },
-                { root, rootMargin, threshold }
+                { root, rootMargin, threshold: transformedThreshold }
             );
+
             observerInstanceRef.current = instance;
         }
 
@@ -127,7 +142,7 @@ export function useElementInView<T extends HTMLElement = HTMLElement>({
     }, [
         root,
         rootMargin,
-        threshold,
+        memoizedThreshold,
         disconnectOnceVisible,
         observeElement,
         disconnect,
