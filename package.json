@@ -19,9 +19,6 @@
     "prepublishOnly": "npm run test && npm run lint",
     "preversion": "npm run lint"
   },
-  "peerDependencies": {
-    "react": ">=16"
-  },
   "husky": {
     "hooks": {
       "pre-commit": "lint-staged && npm run test"
@@ -41,6 +38,10 @@
   "name": "use-element-in-view",
   "author": "Josh Reynolds",
   "module": "dist/use-element-in-view.esm.js",
+  "peerDependencies": {
+    "react": ">=16.8.0",
+    "react-dom": ">=16.8.0"
+  },
   "devDependencies": {
     "@testing-library/react": "11.1.0",
     "@testing-library/react-hooks": "3.4.2",
